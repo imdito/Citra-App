@@ -302,8 +302,14 @@ class ImageProcessingView extends StatelessWidget {
                                       child: Text('Canny'),
                                     ),
                                     DropdownMenuItem(
+                                        value: 'laplace',
+                                        child: Text('laplace')),
+                                    DropdownMenuItem(
+                                        value: 'prewitt',
+                                        child: Text('Prewitt')),
+                                    DropdownMenuItem(
                                         value: 'roberts',
-                                        child: Text('Roberts'))
+                                        child: Text('Roberts')),
                                   ],
                                   onChanged: (val) {
                                     if (val != null) {
