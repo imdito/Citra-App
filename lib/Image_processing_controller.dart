@@ -178,27 +178,30 @@ class ImageProcessingController extends GetxController {
 // Gx = [1 0; 0 -1]
 // Gy = [0 1; -1 0]
 img.Image? applyManualRoberts(img.Image src) {
-  final rx = [
-    1, 0, 0,
-    0, -1, 0,
-    0, 0, 0
-  ];
-  final ry = [
-    0, 1, 0,
-    -1, 0, 0,
-    0, 0, 0
-  ];
+  // Convert to OpenCV Mat
+  final srcBytes = img.encodePng(src);
+  final mat = cv.imdecode(srcBytes, cv.IMREAD_GRAYSCALE);
 
-  final Jx = img.convolution(src, filter: rx);
-  final Jy = img.convolution(src, filter: ry);
-  Uint8List Jxx = img.encodePng(Jx);
-  Uint8List Jyy = img.encodePng(Jy);
-  final jy = cv.imdecode(Jyy, cv.IMREAD_GRAYSCALE);
-  final jx = cv.imdecode(Jxx, cv.IMREAD_GRAYSCALE);
+  // Roberts Cross kernels
+  final rx = cv.Mat.fromList(2, 2, cv.MatType(cv.MatType.CV_32F), [1.0, 0.0, 0.0, -1.0]);
+  final ry = cv.Mat.fromList(2, 2, cv.MatType(cv.MatType.CV_32F), [0.0, 1.0, -1.0, 0.0]);
 
-  final Jedge = cv.sqrt(cv.add(cv.pow(jy, 2), cv.pow(jx, 2)));
-  final img.Image? hasil = img.decodeImage(Jedge.data);
-  return hasil;
+  // Apply filters
+  final jx = cv.filter2D(mat, cv.MatType.CV_32F, rx);
+  final jy = cv.filter2D(mat, cv.MatType.CV_32F, ry);
+
+  // Calculate magnitude: sqrt(jx^2 + jy^2)
+  final jx2 = cv.multiply(jx, jx);
+  final jy2 = cv.multiply(jy, jy);
+  final sum = cv.add(jx2, jy2);
+  final magnitude = cv.sqrt(sum);
+
+  // Convert back to 8-bit
+  final result = cv.Mat.empty();
+  cv.normalize(magnitude, result, alpha: 0, beta: 255, normType: cv.NORM_MINMAX, dtype: cv.MatType.CV_8U);
+
+  final (success, bytes) = cv.imencode('.png', result);
+  return img.decodeImage(bytes);
 }
 
 
