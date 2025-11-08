@@ -11,6 +11,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     // Gunakan GetMaterialApp
     return GetMaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Flutter Image Processor',
       home: ImageProcessingView(), // Langsung ke screen Anda
       // Jika Anda menggunakan GetX routes, Anda bisa setup bindings di sini
