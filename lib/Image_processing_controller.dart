@@ -10,17 +10,18 @@ import 'dart:math';
 // UBAH KELAS ProcessParams Anda
 class ProcessParams {
   final File imageFile;
-  final String methodName;
+  final List<String> methods; // daftar metode yang dipilih (berurutan)
   final double brightness;
   final double contrast;
   final int blurRadius;
 
   // TAMBAHKAN INI
-  final String edgeMethod; // Untuk menyimpan 'sobel' atau 'canny'
+  final String
+  edgeMethod; // Untuk menyimpan 'sobel' / 'canny' / 'laplacian' / 'prewitt' / 'roberts'
 
   ProcessParams({
     required this.imageFile,
-    required this.methodName,
+    required this.methods,
     this.brightness = 0.0,
     this.contrast = 1.0,
     this.blurRadius = 3,
@@ -33,78 +34,87 @@ class ProcessParams {
 Uint8List _processImageInBackground(ProcessParams params) {
   final bytes = params.imageFile.readAsBytesSync();
   final img.Image originalImage = img.decodeImage(bytes)!;
-  img.Image? processedImage;
 
-  // Beberapa algoritma (seperti edge detection) bekerja
-  // paling baik pada gambar grayscale.
-  final img.Image grayImage = img.grayscale(originalImage);
+  // Mulai dari gambar asli, lalu terapkan metode terpilih secara berurutan.
+  img.Image current = originalImage;
 
+  // Urutan canonical agar hasil konsisten saat banyak metode dipilih.
+  const List<String> canonicalOrder = [
+    'grayscale',
+    'invert',
+    'sepia',
+    'brightness',
+    'contrast',
+    'blur',
+    'sharpen',
+    'edge_detection',
+  ];
 
-  switch (params.methodName) {
-    case 'grayscale':
-      processedImage = grayImage; // Kita sudah buat di atas
-      break;
-    case 'invert':
-      processedImage = img.invert(originalImage);
-      break;
-    case 'sepia':
-      processedImage = img.sepia(originalImage);
-      break;
-    case 'brightness':
-      processedImage = img.adjustColor(
-          originalImage,
-          brightness: params.brightness
-      );
-      break;
-    case 'contrast':
-      processedImage = img.adjustColor(
-          originalImage,
-          contrast: params.contrast
-      );
-      break;
-    case 'blur':
-      processedImage = img.gaussianBlur(
-          originalImage,
-          radius: params.blurRadius
-      );
-      break;
-    case 'sharpen':
-      processedImage = img.convolution(originalImage, filter: [
-        0, -1,  0,
-        -1,  5, -1,
-        0, -1,  0
-      ]);
-      break;
+  // Filter methods sesuai urutan canonical namun hanya yang dipilih.
+  final List<String> toApply = [
+    for (final m in canonicalOrder)
+      if (params.methods.contains(m)) m,
+  ];
 
-    case 'edge_detection':
-      final mat = cv.imread(params.imageFile.path);
-      final grayMat = cv.cvtColor(mat, cv.COLOR_BGR2GRAY);
-      if (params.edgeMethod == 'sobel') {
-        processedImage = img.sobel(grayImage);
-      } else if (params.edgeMethod == 'canny') {
+  for (final method in toApply) {
+    switch (method) {
+      case 'grayscale':
+        current = img.grayscale(current);
+        break;
+      case 'invert':
+        current = img.invert(current);
+        break;
+      case 'sepia':
+        current = img.sepia(current);
+        break;
+      case 'brightness':
+        current = img.adjustColor(current, brightness: params.brightness);
+        break;
+      case 'contrast':
+        current = img.adjustColor(current, contrast: params.contrast);
+        break;
+      case 'blur':
+        current = img.gaussianBlur(current, radius: params.blurRadius);
+        break;
+      case 'sharpen':
+        current = img.convolution(
+          current,
+          filter: [0, -1, 0, -1, 5, -1, 0, -1, 0],
+        );
+        break;
+      case 'edge_detection':
+        // Pastikan input grayscale untuk deteksi tepi, tanpa memaksa
+        // pengguna jika sudah grayscale sebelumnya.
+        final img.Image grayImage = img.grayscale(current);
 
-        final edges = cv.canny(grayMat, 100, 200);
-        final (succes, bytes) = cv.imencode('.png', edges);
-        processedImage = img.decodeImage(bytes)!;
-
-      } else if (params.edgeMethod == 'laplacian') {
-        final laplacian = cv.laplacian(grayMat, cv.MatType.CV_8U);
-        final (succes, bytes) = cv.imencode('.png', laplacian);
-        processedImage = originalImage;
-      }else if(params.edgeMethod == 'prewitt'){
-        processedImage = applyManualPrewitt(grayImage);
-      }else if(params.edgeMethod == 'roberts'){
-        processedImage = applyManualRoberts(grayImage);
-      }
-      else{
-        // Default ke Sobel jika metode tidak dikenali
-        processedImage = img.sobel(grayImage);
-      }
-    default:
-      processedImage = originalImage;
+        if (params.edgeMethod == 'sobel') {
+          current = img.sobel(grayImage);
+        } else if (params.edgeMethod == 'canny') {
+          // Konversi 'current' ke Mat, lalu Canny
+          final currentBytes = img.encodePng(grayImage);
+          final mat = cv.imdecode(currentBytes, cv.IMREAD_GRAYSCALE);
+          final edges = cv.canny(mat, 100, 200);
+          final (_success, outBytes) = cv.imencode('.png', edges);
+          current = img.decodeImage(outBytes)!;
+        } else if (params.edgeMethod == 'laplacian') {
+          final currentBytes = img.encodePng(grayImage);
+          final mat = cv.imdecode(currentBytes, cv.IMREAD_GRAYSCALE);
+          final lap = cv.laplacian(mat, cv.MatType.CV_8U);
+          final (_success, outBytes) = cv.imencode('.png', lap);
+          current = img.decodeImage(outBytes)!;
+        } else if (params.edgeMethod == 'prewitt') {
+          current = applyManualPrewitt(grayImage);
+        } else if (params.edgeMethod == 'roberts') {
+          current = applyManualRoberts(grayImage)!;
+        } else {
+          // default ke Sobel
+          current = img.sobel(grayImage);
+        }
+        break;
+    }
   }
 
-  return Uint8List.fromList(img.encodePng(processedImage!));
+  return Uint8List.fromList(img.encodePng(current));
 }
 
 // ----- CONTROLLER UTAMA -----
@@ -113,21 +123,23 @@ class ImageProcessingController extends GetxController {
   final Rx<File?> gambarAsli = Rx<File?>(null);
   final Rx<Uint8List?> gambarHasilProses = Rx<Uint8List?>(null);
   final RxBool isLoading = false.obs;
-  final RxString selectedMethod = 'grayscale'.obs;
+  // Multi-pilih metode
+  final RxList<String> selectedMethods =
+      <String>[].obs; // tidak default grayscale agar tidak auto convert
 
   // State untuk slider (sesuai UI Anda)
   final RxDouble brightnessValue = 0.0.obs; // UI Anda min: 0
-  final RxDouble contrastValue = 1.0.obs;   // UI Anda min: 0, default 1
-  final RxDouble blurRadius = 3.0.obs;      // UI Anda min: 1
+  final RxDouble contrastValue = 1.0.obs; // UI Anda min: 0, default 1
+  final RxDouble blurRadius = 3.0.obs; // UI Anda min: 1
 
   // --- TAMBAHKAN STATE BARU UNTUK DROPDOWN ---
   final RxString edgeDetectionMethod = 'sobel'.obs; // Default 'sobel'
 
-
   Future<void> pilihGambar() async {
     final picker = ImagePicker();
-    final XFile? pickedFile =
-        await picker.pickImage(source: ImageSource.gallery);
+    final XFile? pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+    );
 
     if (pickedFile != null) {
       gambarAsli.value = File(pickedFile.path);
@@ -138,40 +150,43 @@ class ImageProcessingController extends GetxController {
   // --- UBAH FUNGSI prosesGambar ---
   Future<void> prosesGambar() async {
     if (gambarAsli.value == null || isLoading.isTrue) return;
+    if (selectedMethods.isEmpty) {
+      // Jika tidak ada metode dipilih, tampilkan gambar asli
+      gambarHasilProses.value = await gambarAsli.value!.readAsBytes();
+      return;
+    }
 
     try {
       isLoading.value = true;
 
       final params = ProcessParams(
         imageFile: gambarAsli.value!,
-        methodName: selectedMethod.value,
+        methods: List<String>.from(selectedMethods),
         brightness: brightnessValue.value,
         contrast: contrastValue.value,
         blurRadius: blurRadius.value.toInt(),
-
         // TAMBAHKAN INI
         edgeMethod: edgeDetectionMethod.value, // Kirim metode yang dipilih
       );
 
       final Uint8List result = await compute(_processImageInBackground, params);
       gambarHasilProses.value = result;
-
     } catch (e) {
       print('test');
       print(e);
       Get.snackbar("Error", "Gagal memproses gambar: $e");
-
     } finally {
       isLoading.value = false;
     }
   }
 
-  void ubahMetode(String? metodeBaru) {
-    if (metodeBaru != null) {
-      selectedMethod.value = metodeBaru;
+  void toggleMetode(String metode) {
+    if (selectedMethods.contains(metode)) {
+      selectedMethods.remove(metode);
+    } else {
+      selectedMethods.add(metode);
     }
   }
-
 }
 
 // Ini adalah implementasi manual dari:
@@ -183,8 +198,18 @@ img.Image? applyManualRoberts(img.Image src) {
   final mat = cv.imdecode(srcBytes, cv.IMREAD_GRAYSCALE);
 
   // Roberts Cross kernels
-  final rx = cv.Mat.fromList(2, 2, cv.MatType(cv.MatType.CV_32F), [1.0, 0.0, 0.0, -1.0]);
-  final ry = cv.Mat.fromList(2, 2, cv.MatType(cv.MatType.CV_32F), [0.0, 1.0, -1.0, 0.0]);
+  final rx = cv.Mat.fromList(2, 2, cv.MatType(cv.MatType.CV_32F), [
+    1.0,
+    0.0,
+    0.0,
+    -1.0,
+  ]);
+  final ry = cv.Mat.fromList(2, 2, cv.MatType(cv.MatType.CV_32F), [
+    0.0,
+    1.0,
+    -1.0,
+    0.0,
+  ]);
 
   // Apply filters
   final jx = cv.filter2D(mat, cv.MatType.CV_32F, rx);
@@ -198,12 +223,18 @@ img.Image? applyManualRoberts(img.Image src) {
 
   // Convert back to 8-bit
   final result = cv.Mat.empty();
-  cv.normalize(magnitude, result, alpha: 0, beta: 255, normType: cv.NORM_MINMAX, dtype: cv.MatType.CV_8U);
+  cv.normalize(
+    magnitude,
+    result,
+    alpha: 0,
+    beta: 255,
+    normType: cv.NORM_MINMAX,
+    dtype: cv.MatType.CV_8U,
+  );
 
   final (success, bytes) = cv.imencode('.png', result);
   return img.decodeImage(bytes);
 }
-
 
 img.Image applyManualPrewitt(img.Image src) {
   final int width = src.width;
