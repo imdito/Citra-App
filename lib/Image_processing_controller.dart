@@ -1,11 +1,13 @@
-import 'dart:io';
-import 'dart:typed_data';
-import 'package:flutter/foundation.dart';
-import 'package:get/get.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:image/image.dart' as img;
+import 'dart:io'; //akses file
+import 'dart:typed_data'; //akses data biner
+import 'package:flutter/foundation.dart'; //akses compute yang tidak mebekukan ui
+import 'package:get/get.dart'; //getx
+import 'package:image_picker/image_picker.dart'; //"image picker"
+import 'package:image/image.dart' as img; 
 import 'package:opencv_dart/opencv_dart.dart' as cv;
 import 'dart:math';
+
+
 
 // UBAH KELAS ProcessParams Anda
 class ProcessParams {
@@ -16,8 +18,7 @@ class ProcessParams {
   final int blurRadius;
 
   // TAMBAHKAN INI
-  final String
-  edgeMethod; // Untuk menyimpan 'sobel' / 'canny' / 'laplacian' / 'prewitt' / 'roberts'
+  final String edgeMethod; // Untuk menyimpan 'sobel' / 'canny' / 'laplacian' / 'prewitt' / 'roberts'
 
   ProcessParams({
     required this.imageFile,
@@ -128,12 +129,13 @@ class ImageProcessingController extends GetxController {
       <String>[].obs; // tidak default grayscale agar tidak auto convert
 
   // State untuk slider (sesuai UI Anda)
-  final RxDouble brightnessValue = 0.0.obs; // UI Anda min: 0
+  final RxDouble brightnessValue = 1.0.obs; // UI Anda min: 0, biar default 1
   final RxDouble contrastValue = 1.0.obs; // UI Anda min: 0, default 1
   final RxDouble blurRadius = 3.0.obs; // UI Anda min: 1
 
   // --- TAMBAHKAN STATE BARU UNTUK DROPDOWN ---
   final RxString edgeDetectionMethod = 'sobel'.obs; // Default 'sobel'
+  final histogramData = <String, List<int>>{}.obs;
 
   Future<void> pilihGambar() async {
     final picker = ImagePicker();
@@ -145,6 +147,30 @@ class ImageProcessingController extends GetxController {
       gambarAsli.value = File(pickedFile.path);
       gambarHasilProses.value = null; // Reset hasil proses
     }
+  }
+  
+  void generateHistogram(Uint8List imageBytes) {
+    final img.Image? decoded = img.decodeImage(imageBytes);
+    if (decoded == null) return;
+
+    final rHist = List<int>.filled(256, 0);
+    final gHist = List<int>.filled(256, 0);
+    final bHist = List<int>.filled(256, 0);
+
+    for (int y = 0; y < decoded.height; y++) {
+      for (int x = 0; x < decoded.width; x++) {
+        final pixel = decoded.getPixel(x, y);
+        rHist[pixel.r.toInt()] += 1;
+        gHist[pixel.g.toInt()] += 1;
+        bHist[pixel.b.toInt()] += 1;
+      }
+    }
+
+    histogramData.value = {
+      'r': rHist,
+      'g': gHist,
+      'b': bHist,
+    };
   }
 
   // --- UBAH FUNGSI prosesGambar ---
@@ -165,12 +191,13 @@ class ImageProcessingController extends GetxController {
         brightness: brightnessValue.value,
         contrast: contrastValue.value,
         blurRadius: blurRadius.value.toInt(),
-        // TAMBAHKAN INI
         edgeMethod: edgeDetectionMethod.value, // Kirim metode yang dipilih
       );
 
       final Uint8List result = await compute(_processImageInBackground, params);
       gambarHasilProses.value = result;
+      generateHistogram(result);
+
     } catch (e) {
       print('test');
       print(e);
@@ -281,3 +308,7 @@ img.Image applyManualPrewitt(img.Image src) {
   }
   return dest;
 }
+
+
+
+
