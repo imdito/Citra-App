@@ -170,10 +170,10 @@ class ImageProcessingView extends StatelessWidget {
               Divider(height: 32), // stand for it's name
 
               // Edit time
-              // Changed from Expanded to SizedBox to allow scrolling in SingleChildScrollView
-              SizedBox(
-                height: 500, // Increased height to comfortably show all controls including edge detection
+              // Use IntrinsicHeight to prevent overflow
+              IntrinsicHeight(
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // bagian pertama children di kiri dulu
                     Expanded(
@@ -209,29 +209,32 @@ class ImageProcessingView extends StatelessWidget {
                           );
                         }
 
-                        return Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            buildChip(
-                              'grayscale',
-                              'Grayscale',
-                              Icons.filter_b_and_w,
-                            ),
-                            buildChip('invert', 'Invert', Icons.invert_colors),
-                            buildChip('sepia', 'Sepia', Icons.camera),
-                            buildChip('brightness', 'Brightness', Icons.wb_sunny),
-                            buildChip('contrast', 'Contrast', Icons.tonality),
-                            buildChip('blur', 'Gaussian', Icons.blur_on),
-                            buildChip('sharpen', 'Sharpen', Icons.auto_fix_high),
-                            buildChip('edge_detection', 'Edge', Icons.grain),
-                          ],
+                        return SingleChildScrollView(
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              buildChip('grayscale', 'Grayscale', Icons.filter_b_and_w,),
+                              buildChip('invert', 'Invert', Icons.invert_colors),
+                              buildChip('sepia', 'Sepia', Icons.camera),
+                              buildChip('brightness', 'Brightness', Icons.wb_sunny),
+                              buildChip('contrast', 'Contrast', Icons.tonality),
+                              buildChip('blur', 'Gaussian', Icons.blur_on),
+                              buildChip('sharpen', 'Sharpen', Icons.auto_fix_high),
+                              buildChip('edge_detection', 'Edge', Icons.grain),
+                              buildChip('hist_equal', 'Hist Equalizer', Icons.auto_graph_rounded)
+                            ],
+                          ),
                         );
                       }),
                     ),
 
                     // --- PEMISAH ---
-                    VerticalDivider(width: 20),
+                    Container(
+                      width: 1.0, // Lebar garis
+                      color: Colors.grey.shade300, // Warna garis
+                      margin: const EdgeInsets.symmetric(horizontal: 8.0), // Spasi Kiri-Kanan
+                    ),
 
                     // kanan 
                     Expanded(
@@ -332,7 +335,11 @@ class ImageProcessingView extends StatelessWidget {
                           );
                         }
 
-                        return ListView(children: [...controls]);
+                        return SingleChildScrollView(
+                          child: Column(
+                            children: [...controls],
+                          ),
+                        );
                       }),
                     ),
                   ],

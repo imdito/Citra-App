@@ -49,6 +49,7 @@ Uint8List _processImageInBackground(ProcessParams params) {
     'blur',
     'sharpen',
     'edge_detection',
+    'hist_equal'
   ];
 
   // Filter methods sesuai urutan canonical namun hanya yang dipilih.
@@ -110,6 +111,14 @@ Uint8List _processImageInBackground(ProcessParams params) {
         } else {
           // default ke Sobel
           current = img.sobel(grayImage);
+        }
+        break;
+      case 'hist_equal':
+        print("histogram equalizer");
+        final inputBytes = img.encodePng(current);
+        final (success, outputBytes) = processEqualizeColor(inputBytes);
+        if (success) {
+          current = img.decodeImage(outputBytes)!;
         }
         break;
     }
@@ -287,7 +296,7 @@ img.Image applyManualPrewitt(img.Image src) {
         for (int kx = -1; kx <= 1; ++kx) {
           // Ambil nilai piksel (gambar sudah grayscale)
           final pixel = src.getPixel(x + kx, y + ky);
-          final val = pixel.r; // Ambil channel merah saja
+          final val = pixel.r.toDouble(); // Ambil channel merah saja dan konversi ke double
 
           Jx += val * Px[i];
           Jy += val * Py[i];
@@ -308,6 +317,70 @@ img.Image applyManualPrewitt(img.Image src) {
   }
   return dest;
 }
+
+(bool, Uint8List) processEqualizeCV(Uint8List inputBytes) {
+
+  // 1. Decode sebagai GRAYSCALE (Wajib untuk equalizeHist)
+  final grayMat = cv.imdecode(inputBytes, cv.IMREAD_GRAYSCALE);
+  if (grayMat.isEmpty) {
+    throw Exception("Gagal decode gambar");
+  }
+
+  // 2. Buat Mat kosong untuk hasil
+  final equalizedMat = cv.Mat.empty();
+
+  // 3. Jalankan fungsinya
+  cv.equalizeHist(grayMat, dst: equalizedMat);
+
+  // 4. Encode kembali ke bytes
+  final outputBytes = cv.imencode(".png", equalizedMat);
+
+  // 5. Bersihkan memori
+  grayMat.dispose();
+  equalizedMat.dispose();
+
+  return outputBytes;
+}
+
+(bool, Uint8List) processEqualizeColor(Uint8List inputBytes) {
+  // 1. Decode as color image (BGR)
+  final mat = cv.imdecode(inputBytes, cv.IMREAD_COLOR);
+  if (mat.isEmpty) {
+    throw Exception("Gagal decode gambar warna");
+  }
+
+  // 2. Convert to YCrCb color space
+  final ycrcb = cv.cvtColor(mat, cv.COLOR_BGR2YCrCb);
+
+  // 3. Split into channels
+  final channels = cv.split(ycrcb);
+
+  // 4. Equalize only the Y (luminance) channel
+  final yEq = cv.equalizeHist(channels[0]);
+  channels[0].dispose();
+  channels[0] = yEq;
+
+  // 5. Merge channels back
+  final merged = cv.merge(channels);
+
+  // 6. Convert back to BGR
+  final result = cv.cvtColor(merged, cv.COLOR_YCrCb2BGR);
+
+  // 7. Encode result
+  final outputBytes = cv.imencode('.png', result);
+
+  // 8. Dispose all mats
+  for (final c in channels) {
+    c.dispose();
+  }
+  mat.dispose();
+  ycrcb.dispose();
+  merged.dispose();
+  result.dispose();
+
+  return outputBytes;
+}
+
 
 
 
