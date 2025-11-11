@@ -3,11 +3,9 @@ import 'dart:typed_data'; //akses data biner
 import 'package:flutter/foundation.dart'; //akses compute yang tidak mebekukan ui
 import 'package:get/get.dart'; //getx
 import 'package:image_picker/image_picker.dart'; //"image picker"
-import 'package:image/image.dart' as img; 
+import 'package:image/image.dart' as img;
 import 'package:opencv_dart/opencv_dart.dart' as cv;
 import 'dart:math';
-
-
 
 // UBAH KELAS ProcessParams Anda
 class ProcessParams {
@@ -18,7 +16,15 @@ class ProcessParams {
   final int blurRadius;
 
   // TAMBAHKAN INI
-  final String edgeMethod; // Untuk menyimpan 'sobel' / 'canny' / 'laplacian' / 'prewitt' / 'roberts'
+  final String
+  edgeMethod; // Untuk menyimpan 'sobel' / 'canny' / 'laplacian' / 'prewitt' / 'roberts'
+
+  final int rotationAngle;
+  final double scaleFactor;
+  final bool flipHorizontal;
+  final bool flipVertical;
+  final int translateX;
+  final int translateY;
 
   ProcessParams({
     required this.imageFile,
@@ -28,6 +34,12 @@ class ProcessParams {
     this.blurRadius = 3,
     // TAMBAHKAN INI
     this.edgeMethod = 'sobel', // Nilai default
+    this.rotationAngle = 0,
+    this.scaleFactor = 1.0,
+    this.flipHorizontal = false,
+    this.flipVertical = false,
+    this.translateX = 0,
+    this.translateY = 0,
   });
 }
 
@@ -49,7 +61,11 @@ Uint8List _processImageInBackground(ProcessParams params) {
     'blur',
     'sharpen',
     'edge_detection',
-    'hist_equal'
+    'hist_equal',
+    'rotation',
+    'scaling',
+    'flipping',
+    'translation',
   ];
 
   // Filter methods sesuai urutan canonical namun hanya yang dipilih.
@@ -121,6 +137,37 @@ Uint8List _processImageInBackground(ProcessParams params) {
           current = img.decodeImage(outputBytes)!;
         }
         break;
+      case 'rotation':
+        current = img.copyRotate(current, angle: params.rotationAngle);
+        break;
+      case 'scaling':
+        current = img.copyResize(
+          current,
+          width: (current.width * params.scaleFactor).round(),
+          height: (current.height * params.scaleFactor).round(),
+        );
+        break;
+      case 'flipping':
+        if (params.flipHorizontal) {
+          current = img.flipHorizontal(current);
+        }
+        if (params.flipVertical) {
+          current = img.flipVertical(current);
+        }
+        break;
+      case 'translation':
+        final translatedImage = img.Image(
+          width: current.width,
+          height: current.height,
+        );
+        img.compositeImage(
+          translatedImage,
+          current,
+          dstX: params.translateX,
+          dstY: params.translateY,
+        );
+        current = translatedImage;
+        break;
     }
   }
 
@@ -144,21 +191,17 @@ class ImageProcessingController extends GetxController {
 
   // --- TAMBAHKAN STATE BARU UNTUK DROPDOWN ---
   final RxString edgeDetectionMethod = 'sobel'.obs; // Default 'sobel'
-  final histogramData = <String, List<int>>{}.obs;
+  final histogramAfter = <String, List<int>>{}.obs;
+  final histogramBefore = <String, List<int>>{}.obs;
 
-  Future<void> pilihGambar() async {
-    final picker = ImagePicker();
-    final XFile? pickedFile = await picker.pickImage(
-      source: ImageSource.gallery,
-    );
+  final RxDouble rotationAngle = 0.0.obs;
+  final RxDouble scaleFactor = 1.0.obs;
+  final RxBool flipHorizontal = false.obs;
+  final RxBool flipVertical = false.obs;
+  final RxDouble translateX = 0.0.obs;
+  final RxDouble translateY = 0.0.obs;
 
-    if (pickedFile != null) {
-      gambarAsli.value = File(pickedFile.path);
-      gambarHasilProses.value = null; // Reset hasil proses
-    }
-  }
-  
-  void generateHistogram(Uint8List imageBytes) {
+  void generateHistogram(Uint8List imageBytes, {bool isBefore = true}) {
     final img.Image? decoded = img.decodeImage(imageBytes);
     if (decoded == null) return;
 
@@ -175,14 +218,34 @@ class ImageProcessingController extends GetxController {
       }
     }
 
-    histogramData.value = {
-      'r': rHist,
-      'g': gHist,
-      'b': bHist,
-    };
+    // Simpan hasil histogram ke variabel yang sesuai
+    final result = {'r': rHist, 'g': gHist, 'b': bHist};
+
+    if (isBefore) {
+      histogramBefore.value = result;
+    } else {
+      histogramAfter.value = result;
+    }
   }
 
-  // --- UBAH FUNGSI prosesGambar ---
+  // ambil gambar
+  Future<void> pilihGambar() async {
+    final picker = ImagePicker();
+    final XFile? pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+    );
+
+    if (pickedFile != null) {
+      gambarAsli.value = File(pickedFile.path);
+      gambarHasilProses.value = null; // Reset hasil proses
+
+      //histogram before
+      final bytes = await pickedFile.readAsBytes();
+      generateHistogram(bytes, isBefore: true);
+    }
+  }
+
+  // proses gambar
   Future<void> prosesGambar() async {
     if (gambarAsli.value == null || isLoading.isTrue) return;
     if (selectedMethods.isEmpty) {
@@ -201,12 +264,18 @@ class ImageProcessingController extends GetxController {
         contrast: contrastValue.value,
         blurRadius: blurRadius.value.toInt(),
         edgeMethod: edgeDetectionMethod.value, // Kirim metode yang dipilih
+
+        rotationAngle: rotationAngle.value.toInt(),
+        scaleFactor: scaleFactor.value,
+        flipHorizontal: flipHorizontal.value,
+        flipVertical: flipVertical.value,
+        translateX: translateX.value.toInt(),
+        translateY: translateY.value.toInt(),
       );
 
       final Uint8List result = await compute(_processImageInBackground, params);
       gambarHasilProses.value = result;
-      generateHistogram(result);
-
+      generateHistogram(result, isBefore: false);
     } catch (e) {
       print('test');
       print(e);
@@ -296,7 +365,8 @@ img.Image applyManualPrewitt(img.Image src) {
         for (int kx = -1; kx <= 1; ++kx) {
           // Ambil nilai piksel (gambar sudah grayscale)
           final pixel = src.getPixel(x + kx, y + ky);
-          final val = pixel.r.toDouble(); // Ambil channel merah saja dan konversi ke double
+          final val = pixel.r
+              .toDouble(); // Ambil channel merah saja dan konversi ke double
 
           Jx += val * Px[i];
           Jy += val * Py[i];
@@ -319,7 +389,6 @@ img.Image applyManualPrewitt(img.Image src) {
 }
 
 (bool, Uint8List) processEqualizeCV(Uint8List inputBytes) {
-
   // 1. Decode sebagai GRAYSCALE (Wajib untuk equalizeHist)
   final grayMat = cv.imdecode(inputBytes, cv.IMREAD_GRAYSCALE);
   if (grayMat.isEmpty) {
@@ -380,8 +449,3 @@ img.Image applyManualPrewitt(img.Image src) {
 
   return outputBytes;
 }
-
-
-
-
-
