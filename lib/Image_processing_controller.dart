@@ -16,8 +16,9 @@ class ProcessParams {
   final int blurRadius;
 
   // TAMBAHKAN INI
-  final String
-  edgeMethod; // Untuk menyimpan 'sobel' / 'canny' / 'laplacian' / 'prewitt' / 'roberts'
+  final String edgeMethod;
+  final String restorationMethod;
+
 
   final int rotationAngle;
   final double scaleFactor;
@@ -35,7 +36,7 @@ class ProcessParams {
     this.brightness = 0.0,
     this.contrast = 1.0,
     this.blurRadius = 3,
-    // TAMBAHKAN INI
+    this.restorationMethod = 'median', // Nilai default
     this.edgeMethod = 'sobel', // Nilai default
     this.rotationAngle = 0,
     this.scaleFactor = 1.0,
@@ -76,6 +77,7 @@ Uint8List _processImageInBackground(ProcessParams params) {
     'scaling',
     'flipping',
     'translation',
+    'restorasi',
   ];
 
   // Filter methods sesuai urutan canonical namun hanya yang dipilih.
@@ -192,6 +194,24 @@ Uint8List _processImageInBackground(ProcessParams params) {
         );
         current = translatedImage;
         break;
+      case 'restorasi':
+        final inputMat = cv.imdecode(img.encodePng(current), cv.IMREAD_COLOR);
+        if (inputMat.isEmpty) {
+          throw Exception("Gagal decode gambar");
+        }
+        final outputMat = cv.Mat.empty();
+        if(params.restorationMethod == 'median') {
+          cv.medianBlur(inputMat, 5, dst: outputMat);
+          print("median blur");
+        }else if(params.restorationMethod == 'bilateral') {
+          cv.bilateralFilter(inputMat, 9, 75, 75, dst: outputMat);
+          print("bilateral filter");
+        }
+        final (success, outputBytes) = cv.imencode(".png", outputMat);
+        inputMat.dispose();
+        outputMat.dispose();
+        current = img.decodeImage(outputBytes)!;
+        break;
     }
   }
 
@@ -217,7 +237,7 @@ class ImageProcessingController extends GetxController {
   final RxString edgeDetectionMethod = 'sobel'.obs; // Default 'sobel'
   final histogramAfter = <String, List<int>>{}.obs;
   final histogramBefore = <String, List<int>>{}.obs;
-
+  final RxString restorationMethod = 'median'.obs; // Default 'median'
   final RxDouble rotationAngle = 0.0.obs;
   final RxDouble scaleFactor = 1.0.obs;
   final RxBool flipHorizontal = false.obs;
@@ -310,7 +330,7 @@ class ImageProcessingController extends GetxController {
         contrast: contrastValue.value,
         blurRadius: blurRadius.value.toInt(),
         edgeMethod: edgeDetectionMethod.value, // Kirim metode yang dipilih
-
+        restorationMethod: restorationMethod.value,
         rotationAngle: rotationAngle.value.toInt(),
         scaleFactor: scaleFactor.value,
         flipHorizontal: flipHorizontal.value,

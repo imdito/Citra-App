@@ -503,6 +503,30 @@ class ImageProcessingView extends StatelessWidget {
                         ),
                       );
                     }
+                    if (active.contains('restorasi')) {
+                      controls.add(
+                        _Section(
+                          title: 'Metode Restorasi',
+                          child: DropdownButton<String>(
+                            value: controller.restorationMethod.value,
+                            items: const [
+                              DropdownMenuItem(
+                                value: 'median',
+                                child: Text('Median'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'bilateral',
+                                child: Text('Bilateral'),
+                              ),
+                            ],
+                            onChanged: (val) {
+                              if (val != null)
+                                controller.edgeDetectionMethod.value = val;
+                            },
+                          ),
+                        ),
+                      );
+                    }
 
                     if (controls.isEmpty) {
                       return Center(
@@ -613,6 +637,7 @@ class ImageProcessingView extends StatelessWidget {
                     'Translation',
                     Icons.open_with,
                   ),
+                  buildMethodChip('restorasi', 'Restorasi Citra', Icons.healing),
                 ],
               );
             }),
