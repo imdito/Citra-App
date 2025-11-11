@@ -3,9 +3,11 @@ import 'dart:typed_data'; //akses data biner
 import 'package:flutter/foundation.dart'; //akses compute yang tidak mebekukan ui
 import 'package:get/get.dart'; //getx
 import 'package:image_picker/image_picker.dart'; //"image picker"
-import 'package:image/image.dart' as img;
+import 'package:image/image.dart' as img; 
 import 'package:opencv_dart/opencv_dart.dart' as cv;
 import 'dart:math';
+
+
 
 // UBAH KELAS ProcessParams Anda
 class ProcessParams {
@@ -16,15 +18,7 @@ class ProcessParams {
   final int blurRadius;
 
   // TAMBAHKAN INI
-  final String
-  edgeMethod; // Untuk menyimpan 'sobel' / 'canny' / 'laplacian' / 'prewitt' / 'roberts'
-
-  final int rotationAngle;
-  final double scaleFactor;
-  final bool flipHorizontal;
-  final bool flipVertical;
-  final int translateX;
-  final int translateY;
+  final String edgeMethod; // Untuk menyimpan 'sobel' / 'canny' / 'laplacian' / 'prewitt' / 'roberts'
 
 
   final int rotationAngle;
@@ -43,6 +37,8 @@ class ProcessParams {
     this.blurRadius = 3,
     // TAMBAHKAN INI
     this.edgeMethod = 'sobel', // Nilai default
+
+
     this.rotationAngle = 0,
     this.scaleFactor = 1.0,
     this.flipHorizontal = false,
@@ -70,7 +66,7 @@ Uint8List _processImageInBackground(ProcessParams params) {
     'blur',
     'sharpen',
     'edge_detection',
-    'hist_equal',
+    'hist_equal'
     'rotation',
     'scaling',
     'flipping',
@@ -146,7 +142,7 @@ Uint8List _processImageInBackground(ProcessParams params) {
           current = img.decodeImage(outputBytes)!;
         }
         break;
-      case 'rotation':
+        case 'rotation':
         current = img.copyRotate(current, angle: params.rotationAngle);
         break;
       case 'scaling':
@@ -198,8 +194,7 @@ class ImageProcessingController extends GetxController {
 
   // --- TAMBAHKAN STATE BARU UNTUK DROPDOWN ---
   final RxString edgeDetectionMethod = 'sobel'.obs; // Default 'sobel'
-  final histogramAfter = <String, List<int>>{}.obs;
-  final histogramBefore = <String, List<int>>{}.obs;
+  final histogramData = <String, List<int>>{}.obs;
 
   final RxDouble rotationAngle = 0.0.obs;
   final RxDouble scaleFactor = 1.0.obs;
@@ -214,7 +209,13 @@ class ImageProcessingController extends GetxController {
       source: ImageSource.gallery,
     );
 
-  void generateHistogram(Uint8List imageBytes, {bool isBefore = true}) {
+    if (pickedFile != null) {
+      gambarAsli.value = File(pickedFile.path);
+      gambarHasilProses.value = null; // Reset hasil proses
+    }
+  }
+  
+  void generateHistogram(Uint8List imageBytes) {
     final img.Image? decoded = img.decodeImage(imageBytes);
     if (decoded == null) return;
 
@@ -231,34 +232,14 @@ class ImageProcessingController extends GetxController {
       }
     }
 
-    // Simpan hasil histogram ke variabel yang sesuai
-    final result = {'r': rHist, 'g': gHist, 'b': bHist};
-
-    if (isBefore) {
-      histogramBefore.value = result;
-    } else {
-      histogramAfter.value = result;
-    }
+    histogramData.value = {
+      'r': rHist,
+      'g': gHist,
+      'b': bHist,
+    };
   }
 
-  // ambil gambar
-  Future<void> pilihGambar() async {
-    final picker = ImagePicker();
-    final XFile? pickedFile = await picker.pickImage(
-      source: ImageSource.gallery,
-    );
-
-    if (pickedFile != null) {
-      gambarAsli.value = File(pickedFile.path);
-      gambarHasilProses.value = null; // Reset hasil proses
-
-      //histogram before
-      final bytes = await pickedFile.readAsBytes();
-      generateHistogram(bytes, isBefore: true);
-    }
-  }
-
-  // proses gambar
+  // --- UBAH FUNGSI prosesGambar ---
   Future<void> prosesGambar() async {
     if (gambarAsli.value == null || isLoading.isTrue) return;
     if (selectedMethods.isEmpty) {
@@ -278,6 +259,7 @@ class ImageProcessingController extends GetxController {
         blurRadius: blurRadius.value.toInt(),
         edgeMethod: edgeDetectionMethod.value, // Kirim metode yang dipilih
 
+
         rotationAngle: rotationAngle.value.toInt(),
         scaleFactor: scaleFactor.value,
         flipHorizontal: flipHorizontal.value,
@@ -288,7 +270,8 @@ class ImageProcessingController extends GetxController {
 
       final Uint8List result = await compute(_processImageInBackground, params);
       gambarHasilProses.value = result;
-      generateHistogram(result, isBefore: false);
+      generateHistogram(result);
+
     } catch (e) {
       print('test');
       print(e);
@@ -378,8 +361,7 @@ img.Image applyManualPrewitt(img.Image src) {
         for (int kx = -1; kx <= 1; ++kx) {
           // Ambil nilai piksel (gambar sudah grayscale)
           final pixel = src.getPixel(x + kx, y + ky);
-          final val = pixel.r
-              .toDouble(); // Ambil channel merah saja dan konversi ke double
+          final val = pixel.r.toDouble(); // Ambil channel merah saja dan konversi ke double
 
           Jx += val * Px[i];
           Jy += val * Py[i];
@@ -402,6 +384,7 @@ img.Image applyManualPrewitt(img.Image src) {
 }
 
 (bool, Uint8List) processEqualizeCV(Uint8List inputBytes) {
+
   // 1. Decode sebagai GRAYSCALE (Wajib untuk equalizeHist)
   final grayMat = cv.imdecode(inputBytes, cv.IMREAD_GRAYSCALE);
   if (grayMat.isEmpty) {
@@ -462,3 +445,8 @@ img.Image applyManualPrewitt(img.Image src) {
 
   return outputBytes;
 }
+
+
+
+
+
