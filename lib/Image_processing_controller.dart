@@ -68,6 +68,7 @@ Uint8List _processImageInBackground(ProcessParams params) {
     'hue',
     'blur',
     'sharpen',
+    'smoothing',
     'mosaic',
     'edge_detection',
     'hist_equal',
@@ -114,6 +115,11 @@ Uint8List _processImageInBackground(ProcessParams params) {
           current,
           filter: [0, -1, 0, -1, 5, -1, 0, -1, 0],
         );
+        break;
+      case 'smoothing':
+        current = img.convolution(current, filter: [0, 1, 0,
+                                                    1, 4, 1,
+                                                    0, 1, 0], div: 9);
         break;
       case 'mosaic':
         current = applyMosaicBlur(current, params.mosaicSize);

@@ -594,6 +594,7 @@ class ImageProcessingView extends StatelessWidget {
                   buildMethodChip('blur', 'Gaussian', Icons.blur_on),
                   buildMethodChip('mosaic', 'Mosaic', Icons.grid_on),
                   buildMethodChip('sharpen', 'Sharpen', Icons.auto_fix_high),
+                  buildMethodChip('smoothing', 'Smoothing', Icons.spa),
                   buildMethodChip('edge_detection', 'Edge', Icons.grain),
                   buildMethodChip(
                     'hist_equal',
