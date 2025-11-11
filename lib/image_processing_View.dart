@@ -275,6 +275,37 @@ class ImageProcessingView extends StatelessWidget {
                         ),
                       );
                     }
+                    if (active.contains('saturation')) {
+                      controls.add(
+                        _Section(
+                          title:
+                              'Saturation (${controller.saturationValue.value.toStringAsFixed(2)})',
+                          child: Slider(
+                            value: controller.saturationValue.value,
+                            min: 0,
+                            max: 2,
+                            onChanged: (v) =>
+                                controller.saturationValue.value = v,
+                          ),
+                        ),
+                      );
+                    }
+                    if (active.contains('hue')) {
+                      controls.add(
+                        _Section(
+                          title:
+                              'Hue (${controller.hueValue.value.toStringAsFixed(1)}°)',
+                          child: Slider(
+                            value: controller.hueValue.value,
+                            min: -180,
+                            max: 180,
+                            divisions: 360,
+                            label: controller.hueValue.value.toStringAsFixed(0),
+                            onChanged: (v) => controller.hueValue.value = v,
+                          ),
+                        ),
+                      );
+                    }
                     if (active.contains('blur')) {
                       final radius = controller.blurRadius.value.toInt();
                       controls.add(
@@ -287,6 +318,23 @@ class ImageProcessingView extends StatelessWidget {
                             divisions: 9,
                             label: radius.toString(),
                             onChanged: (v) => controller.blurRadius.value = v,
+                          ),
+                        ),
+                      );
+                    }
+                    if (active.contains('mosaic')) {
+                      final mosaicBlockSize = controller.mosaicSize.value
+                          .toInt();
+                      controls.add(
+                        _Section(
+                          title: 'Mosaic Block Size ($mosaicBlockSize px)',
+                          child: Slider(
+                            value: controller.mosaicSize.value,
+                            min: 2,
+                            max: 50,
+                            divisions: 48,
+                            label: mosaicBlockSize.toString(),
+                            onChanged: (v) => controller.mosaicSize.value = v,
                           ),
                         ),
                       );
@@ -505,7 +553,10 @@ class ImageProcessingView extends StatelessWidget {
                   buildMethodChip('sepia', 'Sepia', Icons.camera),
                   buildMethodChip('brightness', 'Brightness', Icons.wb_sunny),
                   buildMethodChip('contrast', 'Contrast', Icons.tonality),
+                  buildMethodChip('saturation', 'Saturation', Icons.water_drop),
+                  buildMethodChip('hue', 'Hue', Icons.color_lens),
                   buildMethodChip('blur', 'Gaussian', Icons.blur_on),
+                  buildMethodChip('mosaic', 'Mosaic', Icons.grid_on),
                   buildMethodChip('sharpen', 'Sharpen', Icons.auto_fix_high),
                   buildMethodChip('edge_detection', 'Edge', Icons.grain),
                   buildMethodChip(

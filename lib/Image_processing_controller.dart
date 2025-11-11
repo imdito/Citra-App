@@ -25,6 +25,9 @@ class ProcessParams {
   final bool flipVertical;
   final int translateX;
   final int translateY;
+  final double saturation;
+  final double hue;
+  final int mosaicSize;
 
   ProcessParams({
     required this.imageFile,
@@ -40,6 +43,9 @@ class ProcessParams {
     this.flipVertical = false,
     this.translateX = 0,
     this.translateY = 0,
+    this.saturation = 1.0,
+    this.hue = 0.0,
+    this.mosaicSize = 10,
   });
 }
 
@@ -58,8 +64,11 @@ Uint8List _processImageInBackground(ProcessParams params) {
     'sepia',
     'brightness',
     'contrast',
+    'saturation',
+    'hue',
     'blur',
     'sharpen',
+    'mosaic',
     'edge_detection',
     'hist_equal',
     'rotation',
@@ -91,6 +100,12 @@ Uint8List _processImageInBackground(ProcessParams params) {
       case 'contrast':
         current = img.adjustColor(current, contrast: params.contrast);
         break;
+      case 'saturation':
+        current = img.adjustColor(current, saturation: params.saturation);
+        break;
+      case 'hue':
+        current = img.adjustColor(current, hue: params.hue);
+        break;
       case 'blur':
         current = img.gaussianBlur(current, radius: params.blurRadius);
         break;
@@ -99,6 +114,9 @@ Uint8List _processImageInBackground(ProcessParams params) {
           current,
           filter: [0, -1, 0, -1, 5, -1, 0, -1, 0],
         );
+        break;
+      case 'mosaic':
+        current = applyMosaicBlur(current, params.mosaicSize);
         break;
       case 'edge_detection':
         // Pastikan input grayscale untuk deteksi tepi, tanpa memaksa
@@ -201,6 +219,11 @@ class ImageProcessingController extends GetxController {
   final RxDouble translateX = 0.0.obs;
   final RxDouble translateY = 0.0.obs;
 
+  // New state variables for saturation, hue, and mosaic
+  final RxDouble saturationValue = 1.0.obs; // Default 1.0 (no change)
+  final RxDouble hueValue = 0.0.obs; // Default 0.0 (no shift)
+  final RxDouble mosaicSize = 10.0.obs; // Default 10px block size
+
   void generateHistogram(Uint8List imageBytes, {bool isBefore = true}) {
     final img.Image? decoded = img.decodeImage(imageBytes);
     if (decoded == null) return;
@@ -271,6 +294,9 @@ class ImageProcessingController extends GetxController {
         flipVertical: flipVertical.value,
         translateX: translateX.value.toInt(),
         translateY: translateY.value.toInt(),
+        saturation: saturationValue.value,
+        hue: hueValue.value,
+        mosaicSize: mosaicSize.value.toInt(),
       );
 
       final Uint8List result = await compute(_processImageInBackground, params);
@@ -386,6 +412,55 @@ img.Image applyManualPrewitt(img.Image src) {
     }
   }
   return dest;
+}
+
+// Mosaic Blur (Pixelate) Effect
+img.Image applyMosaicBlur(img.Image src, int blockSize) {
+  if (blockSize <= 1) return src; // No effect if block size is too small
+
+  final int width = src.width;
+  final int height = src.height;
+  final img.Image result = img.Image(width: width, height: height);
+
+  // Process image in blocks
+  for (int y = 0; y < height; y += blockSize) {
+    for (int x = 0; x < width; x += blockSize) {
+      // Calculate average color in this block
+      int rSum = 0, gSum = 0, bSum = 0, aSum = 0;
+      int count = 0;
+
+      // Calculate actual block dimensions (handle edges)
+      final int blockWidth = (x + blockSize > width) ? width - x : blockSize;
+      final int blockHeight = (y + blockSize > height) ? height - y : blockSize;
+
+      // Sum all pixels in the block
+      for (int by = 0; by < blockHeight; by++) {
+        for (int bx = 0; bx < blockWidth; bx++) {
+          final pixel = src.getPixel(x + bx, y + by);
+          rSum += pixel.r.toInt();
+          gSum += pixel.g.toInt();
+          bSum += pixel.b.toInt();
+          aSum += pixel.a.toInt();
+          count++;
+        }
+      }
+
+      // Calculate average
+      final int avgR = (rSum / count).round();
+      final int avgG = (gSum / count).round();
+      final int avgB = (bSum / count).round();
+      final int avgA = (aSum / count).round();
+
+      // Fill the entire block with the average color
+      for (int by = 0; by < blockHeight; by++) {
+        for (int bx = 0; bx < blockWidth; bx++) {
+          result.setPixelRgba(x + bx, y + by, avgR, avgG, avgB, avgA);
+        }
+      }
+    }
+  }
+
+  return result;
 }
 
 (bool, Uint8List) processEqualizeCV(Uint8List inputBytes) {
