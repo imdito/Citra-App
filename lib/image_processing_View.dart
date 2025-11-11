@@ -35,8 +35,8 @@ class ImageProcessingView extends StatelessWidget {
       //body
       body: Padding(
         padding: const EdgeInsets.all(16.0), //padding keseluruhan
-        
-        child: SingleChildScrollView( 
+
+        child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -46,17 +46,26 @@ class ImageProcessingView extends StatelessWidget {
                   // bagian insert gambar asli
                   Expanded(
                     child: GestureDetector(
-                      onTap: () => controller.pilihGambar(), // tap ke controller
+                      onTap: () =>
+                          controller.pilihGambar(), // tap ke controller
                       child: Obx(
                         () => Container(
                           // styling kotak gambar asli
-                          height: 150, //tinggi 
+                          height: 150, //tinggi
                           decoration: BoxDecoration(
-                            border: Border.all(color: primaryColor, width: 2), //warna border
+                            border: Border.all(
+                              color: primaryColor,
+                              width: 2,
+                            ), //warna border
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: controller.gambarAsli.value == null
-                              ? Center(child: Text("Ketuk untuk Pilih Gambar")) //text if null
+                              ? Center(
+                                  child: Text(
+                                    "Tap to choose image from your device",
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ) //text if null
                               : Image.file(
                                   controller.gambarAsli.value!,
                                   fit: BoxFit.cover, //auto fit gambar
@@ -77,11 +86,16 @@ class ImageProcessingView extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         // mainan di controller
-                        // obx dari getx 
+                        // obx dari getx
                         child: controller.isLoading.isTrue
                             ? Center(child: CircularProgressIndicator())
                             : controller.gambarHasilProses.value == null
-                            ? Center(child: Text("Hasil Proses"))
+                            ? Center(
+                                child: Text(
+                                  "Edited image will appear here",
+                                  textAlign: TextAlign.center,
+                                ),
+                              )
                             : Image.memory(
                                 controller.gambarHasilProses.value!,
                                 fit: BoxFit.cover,
@@ -94,69 +108,120 @@ class ImageProcessingView extends StatelessWidget {
               SizedBox(height: 16),
 
               // Bagian 2: Histogram Section
-              
               Obx(() {
-                final histogramData = controller.histogramData;
+                final histogramBefore = controller.histogramBefore;
+                final histogramAfter = controller.histogramAfter;
+
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      "Histogram (RGB Overlay)",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      "Histogram Comparison",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                     const SizedBox(height: 8),
 
-                    // Histogram Chart Area
+                    // --- Histogram Sebelum Edit ---
+                    const Text(
+                      "Before Edit",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
                     Container(
-                      height: 150,
+                      height: 120,
                       width: double.infinity,
+                      margin: const EdgeInsets.only(bottom: 12, top: 4),
                       decoration: BoxDecoration(
-                        border: Border.all(color: accentColor, width: 2),
+                        border: Border.all(color: Colors.grey, width: 1.5),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: histogramData.isEmpty
+                      child: histogramBefore.isEmpty
                           ? const Center(
                               child: Text(
-                                "Histogram belum tersedia. Tekan 'Proses Gambar' untuk melihat hasil.",
+                                "Histogram not available. Please select an image.",
                                 style: TextStyle(color: Colors.grey),
                                 textAlign: TextAlign.center,
                               ),
                             )
                           : CustomPaint(
-                              painter: HistogramPainter(histogramData),
+                              painter: HistogramPainter(
+                                controller.histogramBefore,
+                              ),
                             ),
+                    ),
+
+                    // --- Histogram Sesudah Edit ---
+                    const Text(
+                      "After Edit",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                    Container(
+                      height: 120,
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(top: 4),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Colors.pinkAccent,
+                          width: 1.5,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: histogramAfter.isEmpty
+                          ? const Center(
+                              child: Text(
+                                "Histogram not available. Press 'Edit Image' to see the result.",
+                                style: TextStyle(color: Colors.grey),
+                                textAlign: TextAlign.center,
+                              ),
+                            )
+                          : CustomPaint(
+                              painter: HistogramPainter(
+                                controller.histogramAfter,
+                              ),
+                            ),
+                    ),
+
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Get.toNamed('/detailed-image');
+                        },
+                        icon: const Icon(Icons.bar_chart_rounded),
+                        label: const Text("View Detailed Image"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFFE91E63),
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(double.infinity, 44),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          elevation: 3,
+                        ),
+                      ),
                     ),
                   ],
                 );
               }),
-              SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Get.toNamed('/detailed-histogram'); // atau Get.to(DetailHistogramView());
-                  },
-                  icon: const Icon(Icons.bar_chart_rounded),
-                  label: const Text("View Detailed Histogram"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 44),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: 3,
-                  ),
-                ),
-              ),
-              SizedBox(height: 8),
+              SizedBox(height: 5),
+
               // Bagian 3: Tombol Aksi Utama
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () => controller.prosesGambar(), // dipencet => prosesGambar
+                  onPressed: () =>
+                      controller.prosesGambar(), // dipencet => prosesGambar
                   icon: const Icon(Icons.play_arrow), //pake libnary icon arrow
-                  label: const Text("Proses Gambar"), //text normal
+                  label: const Text("Edit Image"), //text normal
                   style: ElevatedButton.styleFrom(
                     backgroundColor: accentColor,
                     foregroundColor: Colors.white,
@@ -168,7 +233,6 @@ class ImageProcessingView extends StatelessWidget {
                 ),
               ),
               Divider(height: 32), // stand for it's name
-
               // Edit time
               // Use IntrinsicHeight to prevent overflow
               IntrinsicHeight(
@@ -179,8 +243,13 @@ class ImageProcessingView extends StatelessWidget {
                     Expanded(
                       flex: 1,
                       child: Obx(() {
-                        final selected = controller.selectedMethods; //mainan di controller
-                        Widget buildChip(String id, String label, IconData icon) {
+                        final selected =
+                            controller.selectedMethods; //mainan di controller
+                        Widget buildChip(
+                          String id,
+                          String label,
+                          IconData icon,
+                        ) {
                           final bool isActive = selected.contains(id);
                           return FilterChip(
                             label: Row(
@@ -214,23 +283,51 @@ class ImageProcessingView extends StatelessWidget {
                             spacing: 8,
                             runSpacing: 8,
                             children: [
-                              buildChip('grayscale', 'Grayscale', Icons.filter_b_and_w,),
-                              buildChip('invert', 'Invert', Icons.invert_colors),
+                              buildChip(
+                                'grayscale',
+                                'Grayscale',
+                                Icons.filter_b_and_w,
+                              ),
+                              buildChip(
+                                'invert',
+                                'Invert',
+                                Icons.invert_colors,
+                              ),
                               buildChip('sepia', 'Sepia', Icons.camera),
-                              buildChip('brightness', 'Brightness', Icons.wb_sunny),
+                              buildChip(
+                                'brightness',
+                                'Brightness',
+                                Icons.wb_sunny,
+                              ),
                               buildChip('contrast', 'Contrast', Icons.tonality),
                               buildChip('blur', 'Gaussian', Icons.blur_on),
-                              buildChip('sharpen', 'Sharpen', Icons.auto_fix_high),
-                              buildChip('edge_detection', 'Edge', Icons.grain),
-                              buildChip('hist_equal', 'Hist Equalizer', Icons.auto_graph_rounded),
-                            
-
                               buildChip(
-                                  'rotation', 'Rotation', Icons.rotate_90_degrees_ccw),
-                              buildChip('scaling', 'Scaling', Icons.zoom_out_map),
+                                'sharpen',
+                                'Sharpen',
+                                Icons.auto_fix_high,
+                              ),
+                              buildChip('edge_detection', 'Edge', Icons.grain),
+                              buildChip(
+                                'hist_equal',
+                                'Hist Equalizer',
+                                Icons.auto_graph_rounded,
+                              ),
+                              buildChip(
+                                'rotation',
+                                'Rotation',
+                                Icons.rotate_90_degrees_ccw,
+                              ),
+                              buildChip(
+                                'scaling',
+                                'Scaling',
+                                Icons.zoom_out_map,
+                              ),
                               buildChip('flipping', 'Flipping', Icons.flip),
                               buildChip(
-                                  'translation', 'Translation', Icons.open_with),
+                                'translation',
+                                'Translation',
+                                Icons.open_with,
+                              ),
                             ],
                           ),
                         );
@@ -241,23 +338,27 @@ class ImageProcessingView extends StatelessWidget {
                     Container(
                       width: 1.0, // Lebar garis
                       color: Colors.grey.shade300, // Warna garis
-                      margin: const EdgeInsets.symmetric(horizontal: 8.0), // Spasi Kiri-Kanan
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 8.0,
+                      ), // Spasi Kiri-Kanan
                     ),
 
-                    // kanan 
+                    // kanan
                     Expanded(
                       flex: 1,
                       child: Obx(() {
                         final active = controller.selectedMethods;
                         final List<Widget> controls = [];
-                      // if case satu satu buat slider di kanan
+                        // if case satu satu buat slider di kanan
                         if (active.contains('brightness')) {
                           controls.add(
                             _Section(
                               title:
                                   'Brightness (${controller.brightnessValue.value.toStringAsFixed(1)})',
                               child: Slider(
-                                value: controller.brightnessValue.value, //harusnya default 1 (harus dari controller)
+                                value: controller
+                                    .brightnessValue
+                                    .value, //harusnya default 1 (harus dari controller)
                                 min: 0,
                                 max: 2,
                                 onChanged: (v) =>
@@ -292,7 +393,8 @@ class ImageProcessingView extends StatelessWidget {
                                 max: 10,
                                 divisions: 9,
                                 label: radius.toString(),
-                                onChanged: (v) => controller.blurRadius.value = v,
+                                onChanged: (v) =>
+                                    controller.blurRadius.value = v,
                               ),
                             ),
                           );
@@ -329,6 +431,99 @@ class ImageProcessingView extends StatelessWidget {
                                   if (val != null)
                                     controller.edgeDetectionMethod.value = val;
                                 },
+                              ),
+                            ),
+                          );
+                        }
+                        if (active.contains('rotation')) {
+                          controls.add(
+                            _Section(
+                              title:
+                                  'Rotation (${controller.rotationAngle.value.toInt()}°)',
+                              child: Slider(
+                                value: controller.rotationAngle.value,
+                                min: 0,
+                                max: 360,
+                                divisions: 360,
+                                label: controller.rotationAngle.value
+                                    .toInt()
+                                    .toStringAsFixed(0),
+                                onChanged: (v) =>
+                                    controller.rotationAngle.value = v,
+                              ),
+                            ),
+                          );
+                        }
+                        if (active.contains('scaling')) {
+                          controls.add(
+                            _Section(
+                              title:
+                                  'Scaling (${controller.scaleFactor.value.toStringAsFixed(2)}x)',
+                              child: Slider(
+                                value: controller.scaleFactor.value,
+                                min: 0.1,
+                                max: 2.0,
+                                onChanged: (v) =>
+                                    controller.scaleFactor.value = v,
+                              ),
+                            ),
+                          );
+                        }
+                        if (active.contains('flipping')) {
+                          controls.add(
+                            _Section(
+                              title: 'Flipping',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  ChoiceChip(
+                                    label: Text('Horizontal'),
+                                    selected: controller.flipHorizontal.value,
+                                    onSelected: (v) =>
+                                        controller.flipHorizontal.value = v,
+                                  ),
+                                  SizedBox(height: 8),
+                                  ChoiceChip(
+                                    label: Text('Vertical'),
+                                    selected: controller.flipVertical.value,
+                                    onSelected: (v) =>
+                                        controller.flipVertical.value = v,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+                        if (active.contains('translation')) {
+                          controls.add(
+                            _Section(
+                              title:
+                                  'Translation (X: ${controller.translateX.value.toInt()}, Y: ${controller.translateY.value.toInt()})',
+                              child: Column(
+                                children: [
+                                  Slider(
+                                    value: controller.translateX.value,
+                                    min: -100,
+                                    max: 100,
+                                    divisions: 200,
+                                    label: controller.translateX.value
+                                        .toInt()
+                                        .toString(),
+                                    onChanged: (v) =>
+                                        controller.translateX.value = v,
+                                  ),
+                                  Slider(
+                                    value: controller.translateY.value,
+                                    min: -100,
+                                    max: 100,
+                                    divisions: 200,
+                                    label: controller.translateY.value
+                                        .toInt()
+                                        .toString(),
+                                    onChanged: (v) =>
+                                        controller.translateY.value = v,
+                                  ),
+                                ],
                               ),
                             ),
                           );
@@ -428,16 +623,14 @@ class ImageProcessingView extends StatelessWidget {
                         if (controls.isEmpty) {
                           return Center(
                             child: Text(
-                              'Pilih metode di kiri untuk mengatur parameter',
+                              'Choose an editing method to see controls here.',
                               style: TextStyle(color: Colors.grey.shade600),
                             ),
                           );
                         }
 
                         return SingleChildScrollView(
-                          child: Column(
-                            children: [...controls],
-                          ),
+                          child: Column(children: [...controls]),
                         );
                       }),
                     ),
@@ -460,7 +653,7 @@ class _Section extends StatelessWidget {
   Widget build(BuildContext context) {
     const secondaryColor = Color(0xFFF8BBD0);
     const primaryColor = Color(0xFFE91E63);
-    
+
     return Card(
       color: secondaryColor,
       elevation: 2,
@@ -521,9 +714,12 @@ class HistogramPainter extends CustomPainter {
 
     for (int i = 0; i < 256; i++) {
       final x = i * stepX;
-      final yR = size.height - (histogramData['r']![i] / maxCount) * size.height;
-      final yG = size.height - (histogramData['g']![i] / maxCount) * size.height;
-      final yB = size.height - (histogramData['b']![i] / maxCount) * size.height;
+      final yR =
+          size.height - (histogramData['r']![i] / maxCount) * size.height;
+      final yG =
+          size.height - (histogramData['g']![i] / maxCount) * size.height;
+      final yB =
+          size.height - (histogramData['b']![i] / maxCount) * size.height;
 
       if (i == 0) {
         pathR.moveTo(x, yR);
