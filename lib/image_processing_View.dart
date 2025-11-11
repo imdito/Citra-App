@@ -49,8 +49,35 @@ class ImageProcessingView extends StatelessWidget {
                       // bagian insert gambar asli
                       Expanded(
                         child: GestureDetector(
-                          onTap: () =>
-                              controller.pilihGambar(), // tap ke controller
+                          onTap: (){
+                            showDialog(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text("Pilih Sumber Gambar"),
+                                content: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    ListTile(
+                                      leading: const Icon(Icons.photo_library),
+                                      title: const Text("Galeri"),
+                                      onTap: () {
+                                        Navigator.of(context).pop();
+                                        controller.pilihGambar();
+                                      },
+                                    ),
+                                    ListTile(
+                                    leading: const Icon(Icons.camera_alt),
+                                    title: const Text("Kamera"),
+                                      onTap: () {
+                                      Navigator.of(context).pop();
+                                      controller.ambilGambarDariKamera();
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          );
+                        },
                           child: Obx(
                             () => Container(
                               // styling kotak gambar asli

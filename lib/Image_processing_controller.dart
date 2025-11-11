@@ -268,6 +268,23 @@ class ImageProcessingController extends GetxController {
     }
   }
 
+  Future<void> ambilGambarDariKamera() async {
+    final picker = ImagePicker();
+    final XFile? pickedFile = await picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 15
+    );
+
+    if (pickedFile != null) {
+      gambarAsli.value = File(pickedFile.path);
+      gambarHasilProses.value = null; // Reset hasil proses
+
+      //histogram before
+      final bytes = await pickedFile.readAsBytes();
+      generateHistogram(bytes, isBefore: true);
+    }
+  }
+
   // proses gambar
   Future<void> prosesGambar() async {
     if (gambarAsli.value == null || isLoading.isTrue) return;
