@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'Image_processing_controller.dart'; // Pastikan file ini ada
+import 'detailed_image.dart';
 
 class ImageProcessingView extends StatelessWidget {
   ImageProcessingView({Key? key}) : super(key: key);
@@ -196,7 +197,13 @@ class ImageProcessingView extends StatelessWidget {
                           width: double.infinity,
                           child: ElevatedButton.icon(
                             onPressed: () {
-                              Get.toNamed('/detailed-image');
+                              Get.to(
+                                () => DetailedImagePage(
+                                  originalImage: controller.gambarAsli.value,
+                                  editedImageBytes:
+                                      controller.gambarHasilProses.value,
+                                ),
+                              );
                             },
                             icon: const Icon(Icons.bar_chart_rounded),
                             label: const Text("View Detailed Image"),
