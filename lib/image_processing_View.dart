@@ -375,6 +375,23 @@ class ImageProcessingView extends StatelessWidget {
                         ),
                       );
                     }
+                    if (active.contains('thresholding')) {
+                      final threshold = controller.thresholdValue.value.toInt();
+                      controls.add(
+                        _Section(
+                          title: 'Threshold ($threshold)',
+                          child: Slider(
+                            value: controller.thresholdValue.value,
+                            min: 0,
+                            max: 255,
+                            divisions: 255,
+                            label: threshold.toString(),
+                            onChanged: (v) =>
+                                controller.thresholdValue.value = v,
+                          ),
+                        ),
+                      );
+                    }
                     if (active.contains('edge_detection')) {
                       controls.add(
                         _Section(
@@ -619,6 +636,8 @@ class ImageProcessingView extends StatelessWidget {
                   buildMethodChip('mosaic', 'Mosaic', Icons.grid_on),
                   buildMethodChip('sharpen', 'Sharpen', Icons.auto_fix_high),
                   buildMethodChip('smoothing', 'Smoothing', Icons.spa),
+                  buildMethodChip('thresholding', 'Threshold',
+                      Icons.settings_brightness),
                   buildMethodChip('edge_detection', 'Edge', Icons.grain),
                   buildMethodChip(
                     'hist_equal',
@@ -637,7 +656,7 @@ class ImageProcessingView extends StatelessWidget {
                     'Translation',
                     Icons.open_with,
                   ),
-                  buildMethodChip('restorasi', 'Restorasi Citra', Icons.healing),
+                  buildMethodChip('restorasi', 'Restoration', Icons.healing),
                 ],
               );
             }),

@@ -29,6 +29,7 @@ class ProcessParams {
   final double saturation;
   final double hue;
   final int mosaicSize;
+  final int thresholdValue;
 
   ProcessParams({
     required this.imageFile,
@@ -47,6 +48,7 @@ class ProcessParams {
     this.saturation = 1.0,
     this.hue = 0.0,
     this.mosaicSize = 10,
+    this.thresholdValue = 127,
   });
 }
 
@@ -78,6 +80,7 @@ Uint8List _processImageInBackground(ProcessParams params) {
     'flipping',
     'translation',
     'restorasi',
+    'thresholding',
   ];
 
   // Filter methods sesuai urutan canonical namun hanya yang dipilih.
@@ -211,6 +214,33 @@ Uint8List _processImageInBackground(ProcessParams params) {
         outputMat.dispose();
         current = img.decodeImage(outputBytes)!;
         break;
+        case 'thresholding':
+        // 1. Konversi ke bytes, lalu decode ke Grayscale Mat (OpenCV)
+        final inputBytes = img.encodePng(current);
+        final grayMat = cv.imdecode(inputBytes, cv.IMREAD_GRAYSCALE);
+        if (grayMat.isEmpty) {
+          throw Exception("Gagal decode gambar untuk thresholding");
+        }
+
+        // 2. Buat Mat kosong untuk output
+        final outputMat = cv.Mat.empty();
+
+        // 3. Terapkan threshold dari OpenCV
+        //    cv.threshold(src, thresholdValue, maxValue, type)
+        cv.threshold(grayMat, params.thresholdValue.toDouble(), 255, cv.THRESH_BINARY,
+            dst: outputMat);
+
+        // 4. Encode kembali ke bytes
+        final (success, outputBytes) = cv.imencode(".png", outputMat);
+        if (!success) {
+          throw Exception("Gagal encode gambar setelah thresholding");
+        }
+        
+        // 5. Bersihkan memori & update 'current'
+        grayMat.dispose();
+        outputMat.dispose();
+        current = img.decodeImage(outputBytes)!;
+        break;
     }
   }
 
@@ -248,6 +278,7 @@ class ImageProcessingController extends GetxController {
   final RxDouble saturationValue = 1.0.obs; // Default 1.0 (no change)
   final RxDouble hueValue = 0.0.obs; // Default 0.0 (no shift)
   final RxDouble mosaicSize = 10.0.obs; // Default 10px block size
+  final RxDouble thresholdValue = 127.0.obs;
 
   void generateHistogram(Uint8List imageBytes, {bool isBefore = true}) {
     final img.Image? decoded = img.decodeImage(imageBytes);
@@ -339,6 +370,7 @@ class ImageProcessingController extends GetxController {
         saturation: saturationValue.value,
         hue: hueValue.value,
         mosaicSize: mosaicSize.value.toInt(),
+        thresholdValue: thresholdValue.value.toInt(),
       );
 
       final Uint8List result = await compute(_processImageInBackground, params);
