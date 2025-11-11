@@ -529,6 +529,97 @@ class ImageProcessingView extends StatelessWidget {
                           );
                         }
 
+                        if (active.contains('rotation')) {
+                          controls.add(
+                            _Section(
+                              title:
+                                  'Rotation (${controller.rotationAngle.value.toInt()}°)',
+                              child: Slider(
+                                value: controller.rotationAngle.value,
+                                min: 0,
+                                max: 360,
+                                divisions: 360,
+                                label: controller.rotationAngle.value
+                                    .toInt().toStringAsFixed(0),
+                                onChanged: (v) =>
+                                    controller.rotationAngle.value = v,
+                              ),
+                            ),
+                          );
+                        }
+                        if (active.contains('scaling')) {
+                          controls.add(
+                            _Section(
+                              title:
+                                  'Scaling (${controller.scaleFactor.value.toStringAsFixed(2)}x)',
+                              child: Slider(
+                                value: controller.scaleFactor.value,
+                                min: 0.1,
+                                max: 2.0,
+                                onChanged: (v) =>
+                                    controller.scaleFactor.value = v,
+                              ),
+                            ),
+                          );
+                        }
+                        if (active.contains('flipping')) {
+                          controls.add(
+                            _Section(
+                              title: 'Flipping',
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
+                                children: [
+                                  ChoiceChip(
+                                    label: Text('Horizontal'),
+                                    selected: controller.flipHorizontal.value,
+                                    onSelected: (v) =>
+                                        controller.flipHorizontal.value = v,
+                                  ),
+                                  ChoiceChip(
+                                    label: Text('Vertical'),
+                                    selected: controller.flipVertical.value,
+                                    onSelected: (v) =>
+                                        controller.flipVertical.value = v,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+                        if (active.contains('translation')) {
+                          controls.add(
+                            _Section(
+                              title:
+                                  'Translation (X: ${controller.translateX.value.toInt()}, Y: ${controller.translateY.value.toInt()})',
+                              child: Column(
+                                children: [
+                                  Slider(
+                                    value: controller.translateX.value,
+                                    min: -100,
+                                    max: 100,
+                                    divisions: 200,
+                                    label:
+                                        controller.translateX.value.toInt().toString(),
+                                    onChanged: (v) =>
+                                        controller.translateX.value = v,
+                                  ),
+                                  Slider(
+                                    value: controller.translateY.value,
+                                    min: -100,
+                                    max: 100,
+                                    divisions: 200,
+                                    label:
+                                        controller.translateY.value.toInt().toString(),
+                                    onChanged: (v) =>
+                                        controller.translateY.value = v,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+
                         if (controls.isEmpty) {
                           return Center(
                             child: Text(

@@ -26,6 +26,15 @@ class ProcessParams {
   final int translateX;
   final int translateY;
 
+
+  final int rotationAngle;
+  final double scaleFactor;
+  final bool flipHorizontal;
+  final bool flipVertical;
+  final int translateX;
+  final int translateY;
+
+
   ProcessParams({
     required this.imageFile,
     required this.methods,
@@ -65,7 +74,7 @@ Uint8List _processImageInBackground(ProcessParams params) {
     'rotation',
     'scaling',
     'flipping',
-    'translation',
+    'translation'
   ];
 
   // Filter methods sesuai urutan canonical namun hanya yang dipilih.
@@ -156,10 +165,8 @@ Uint8List _processImageInBackground(ProcessParams params) {
         }
         break;
       case 'translation':
-        final translatedImage = img.Image(
-          width: current.width,
-          height: current.height,
-        );
+        final translatedImage =
+            img.Image(width: current.width, height: current.height);
         img.compositeImage(
           translatedImage,
           current,
@@ -200,6 +207,12 @@ class ImageProcessingController extends GetxController {
   final RxBool flipVertical = false.obs;
   final RxDouble translateX = 0.0.obs;
   final RxDouble translateY = 0.0.obs;
+
+  Future<void> pilihGambar() async {
+    final picker = ImagePicker();
+    final XFile? pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+    );
 
   void generateHistogram(Uint8List imageBytes, {bool isBefore = true}) {
     final img.Image? decoded = img.decodeImage(imageBytes);
