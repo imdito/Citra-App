@@ -205,7 +205,6 @@ Uint8List _processImageInBackground(ProcessParams params) {
           print("median blur");
         }else if(params.restorationMethod == 'bilateral') {
           cv.bilateralFilter(inputMat, 9, 75, 75, dst: outputMat);
-          print("bilateral filter");
         }
         final (success, outputBytes) = cv.imencode(".png", outputMat);
         inputMat.dispose();

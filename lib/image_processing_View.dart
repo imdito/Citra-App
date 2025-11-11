@@ -521,7 +521,7 @@ class ImageProcessingView extends StatelessWidget {
                             ],
                             onChanged: (val) {
                               if (val != null)
-                                controller.edgeDetectionMethod.value = val;
+                                controller.restorationMethod.value = val;
                             },
                           ),
                         ),
