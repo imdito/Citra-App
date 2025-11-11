@@ -222,15 +222,7 @@ class ImageProcessingView extends StatelessWidget {
                               buildChip('blur', 'Gaussian', Icons.blur_on),
                               buildChip('sharpen', 'Sharpen', Icons.auto_fix_high),
                               buildChip('edge_detection', 'Edge', Icons.grain),
-                              buildChip('hist_equal', 'Hist Equalizer', Icons.auto_graph_rounded),
-                            
-
-                              buildChip(
-                                  'rotation', 'Rotation', Icons.rotate_90_degrees_ccw),
-                              buildChip('scaling', 'Scaling', Icons.zoom_out_map),
-                              buildChip('flipping', 'Flipping', Icons.flip),
-                              buildChip(
-                                  'translation', 'Translation', Icons.open_with),
+                              buildChip('hist_equal', 'Hist Equalizer', Icons.auto_graph_rounded)
                             ],
                           ),
                         );
@@ -329,97 +321,6 @@ class ImageProcessingView extends StatelessWidget {
                                   if (val != null)
                                     controller.edgeDetectionMethod.value = val;
                                 },
-                              ),
-                            ),
-                          );
-                        }
-
-                        if (active.contains('rotation')) {
-                          controls.add(
-                            _Section(
-                              title:
-                                  'Rotation (${controller.rotationAngle.value.toInt()}°)',
-                              child: Slider(
-                                value: controller.rotationAngle.value,
-                                min: 0,
-                                max: 360,
-                                divisions: 360,
-                                label: controller.rotationAngle.value
-                                    .toInt().toStringAsFixed(0),
-                                onChanged: (v) =>
-                                    controller.rotationAngle.value = v,
-                              ),
-                            ),
-                          );
-                        }
-                        if (active.contains('scaling')) {
-                          controls.add(
-                            _Section(
-                              title:
-                                  'Scaling (${controller.scaleFactor.value.toStringAsFixed(2)}x)',
-                              child: Slider(
-                                value: controller.scaleFactor.value,
-                                min: 0.1,
-                                max: 2.0,
-                                onChanged: (v) =>
-                                    controller.scaleFactor.value = v,
-                              ),
-                            ),
-                          );
-                        }
-                        if (active.contains('flipping')) {
-                          controls.add(
-                            _Section(
-                              title: 'Flipping',
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceAround,
-                                children: [
-                                  ChoiceChip(
-                                    label: Text('Horizontal'),
-                                    selected: controller.flipHorizontal.value,
-                                    onSelected: (v) =>
-                                        controller.flipHorizontal.value = v,
-                                  ),
-                                  ChoiceChip(
-                                    label: Text('Vertical'),
-                                    selected: controller.flipVertical.value,
-                                    onSelected: (v) =>
-                                        controller.flipVertical.value = v,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        }
-                        if (active.contains('translation')) {
-                          controls.add(
-                            _Section(
-                              title:
-                                  'Translation (X: ${controller.translateX.value.toInt()}, Y: ${controller.translateY.value.toInt()})',
-                              child: Column(
-                                children: [
-                                  Slider(
-                                    value: controller.translateX.value,
-                                    min: -100,
-                                    max: 100,
-                                    divisions: 200,
-                                    label:
-                                        controller.translateX.value.toInt().toString(),
-                                    onChanged: (v) =>
-                                        controller.translateX.value = v,
-                                  ),
-                                  Slider(
-                                    value: controller.translateY.value,
-                                    min: -100,
-                                    max: 100,
-                                    divisions: 200,
-                                    label:
-                                        controller.translateY.value.toInt().toString(),
-                                    onChanged: (v) =>
-                                        controller.translateY.value = v,
-                                  ),
-                                ],
                               ),
                             ),
                           );
