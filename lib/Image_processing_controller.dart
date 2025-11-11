@@ -20,6 +20,15 @@ class ProcessParams {
   // TAMBAHKAN INI
   final String edgeMethod; // Untuk menyimpan 'sobel' / 'canny' / 'laplacian' / 'prewitt' / 'roberts'
 
+
+  final int rotationAngle;
+  final double scaleFactor;
+  final bool flipHorizontal;
+  final bool flipVertical;
+  final int translateX;
+  final int translateY;
+
+
   ProcessParams({
     required this.imageFile,
     required this.methods,
@@ -28,6 +37,14 @@ class ProcessParams {
     this.blurRadius = 3,
     // TAMBAHKAN INI
     this.edgeMethod = 'sobel', // Nilai default
+
+
+    this.rotationAngle = 0,
+    this.scaleFactor = 1.0,
+    this.flipHorizontal = false,
+    this.flipVertical = false,
+    this.translateX = 0,
+    this.translateY = 0,
   });
 }
 
@@ -50,6 +67,10 @@ Uint8List _processImageInBackground(ProcessParams params) {
     'sharpen',
     'edge_detection',
     'hist_equal'
+    'rotation',
+    'scaling',
+    'flipping',
+    'translation'
   ];
 
   // Filter methods sesuai urutan canonical namun hanya yang dipilih.
@@ -121,6 +142,35 @@ Uint8List _processImageInBackground(ProcessParams params) {
           current = img.decodeImage(outputBytes)!;
         }
         break;
+        case 'rotation':
+        current = img.copyRotate(current, angle: params.rotationAngle);
+        break;
+      case 'scaling':
+        current = img.copyResize(
+          current,
+          width: (current.width * params.scaleFactor).round(),
+          height: (current.height * params.scaleFactor).round(),
+        );
+        break;
+      case 'flipping':
+        if (params.flipHorizontal) {
+          current = img.flipHorizontal(current);
+        }
+        if (params.flipVertical) {
+          current = img.flipVertical(current);
+        }
+        break;
+      case 'translation':
+        final translatedImage =
+            img.Image(width: current.width, height: current.height);
+        img.compositeImage(
+          translatedImage,
+          current,
+          dstX: params.translateX,
+          dstY: params.translateY,
+        );
+        current = translatedImage;
+        break;
     }
   }
 
@@ -145,6 +195,13 @@ class ImageProcessingController extends GetxController {
   // --- TAMBAHKAN STATE BARU UNTUK DROPDOWN ---
   final RxString edgeDetectionMethod = 'sobel'.obs; // Default 'sobel'
   final histogramData = <String, List<int>>{}.obs;
+
+  final RxDouble rotationAngle = 0.0.obs;
+  final RxDouble scaleFactor = 1.0.obs;
+  final RxBool flipHorizontal = false.obs;
+  final RxBool flipVertical = false.obs;
+  final RxDouble translateX = 0.0.obs;
+  final RxDouble translateY = 0.0.obs;
 
   Future<void> pilihGambar() async {
     final picker = ImagePicker();
@@ -201,6 +258,14 @@ class ImageProcessingController extends GetxController {
         contrast: contrastValue.value,
         blurRadius: blurRadius.value.toInt(),
         edgeMethod: edgeDetectionMethod.value, // Kirim metode yang dipilih
+
+
+        rotationAngle: rotationAngle.value.toInt(),
+        scaleFactor: scaleFactor.value,
+        flipHorizontal: flipHorizontal.value,
+        flipVertical: flipVertical.value,
+        translateX: translateX.value.toInt(),
+        translateY: translateY.value.toInt(),
       );
 
       final Uint8List result = await compute(_processImageInBackground, params);
