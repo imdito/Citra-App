@@ -202,6 +202,8 @@ class ImageProcessingView extends StatelessWidget {
                                   originalImage: controller.gambarAsli.value,
                                   editedImageBytes:
                                       controller.gambarHasilProses.value,
+                                  originalHistogram: controller.histogramBefore.value,
+                                  editedHistogram: controller.histogramAfter.value,
                                 ),
                               );
                             },

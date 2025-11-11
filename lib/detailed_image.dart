@@ -2,7 +2,6 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:image/image.dart' as img;
 import 'image_processing_View.dart';
 
 class DetailedImagePage extends StatelessWidget {
@@ -12,33 +11,16 @@ class DetailedImagePage extends StatelessWidget {
 
   final File? originalImage;
   final Uint8List? editedImageBytes;
+  final Map<String, List<int>>? originalHistogram;
+  final Map<String, List<int>>? editedHistogram;
 
   const DetailedImagePage({
     Key? key,
     required this.originalImage,
     required this.editedImageBytes,
+    this.originalHistogram,
+    this.editedHistogram,
   }) : super(key: key);
-
-  Map<String, List<int>> _generateHistogram(Uint8List imageBytes) {
-    final decoded = img.decodeImage(imageBytes);
-    if (decoded == null) return {'r': [], 'g': [], 'b': []};
-
-    final rHist = List<int>.filled(256, 0);
-    final gHist = List<int>.filled(256, 0);
-    final bHist = List<int>.filled(256, 0);
-
-    for (int y = 0; y < decoded.height; y++) {
-      for (int x = 0; x < decoded.width; x++) {
-        final pixel = decoded.getPixel(x, y);
-        rHist[pixel.r.toInt()] += 1;
-        gHist[pixel.g.toInt()] += 1;
-        bHist[pixel.b.toInt()] += 1;
-      }
-    }
-
-    return {'r': rHist, 'g': gHist, 'b': bHist};
-  }
-
   Future<void> _downloadImage(BuildContext context) async {
     if (editedImageBytes == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -146,9 +128,7 @@ class DetailedImagePage extends StatelessWidget {
                           ),
                           child: CustomPaint(
                             painter: HistogramPainter(
-                              _generateHistogram(
-                                originalImage!.readAsBytesSync(),
-                              ),
+                            originalHistogram!
                             ),
                           ),
                         ),
@@ -211,7 +191,7 @@ class DetailedImagePage extends StatelessWidget {
                           ),
                           child: CustomPaint(
                             painter: HistogramPainter(
-                              _generateHistogram(editedImageBytes!),
+                              editedHistogram!
                             ),
                           ),
                         ),
