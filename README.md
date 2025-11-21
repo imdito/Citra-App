@@ -1,16 +1,17 @@
 # citra_app
 
-A new Flutter project.
+Sebuah aplikasi mobile editing foto sebagai project akhir mata kuliah pengolahan Citra
 
-## Getting Started
+## FItur Aplikasi
+- Dapat mengedit foto dengan berbagai metode yang disediakan
+- Dapat melihat histogram dari gambar sebelum dan sesudah edit
+- Gambar yang sudah di edit dapat di download
 
-This project is a starting point for a Flutter application.
 
-A few resources to get you started if this is your first Flutter project:
+Project akhir pengolahan citra oleh :
+- Muhammad Pandito Setiawan
+- Prayatna Ardi Wibisono
+- Raffy Adrian Hidayat
+- Athallah Joyoningrat
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
